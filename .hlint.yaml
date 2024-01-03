@@ -1,0 +1,3 @@
+- ignore: {name: Use if}
+- ignore: {name: Eta reduce}
+- ignore: {name: Use bimap}
