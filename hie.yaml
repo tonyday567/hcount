@@ -1,8 +1,0 @@
-cradle:
-  stack:
-    - path: "./app/hcount.hs"
-      component: "hcount:exe:hcount"
-    - path: "./src"
-      component: "hcount:lib"
-    - path: "./test/hcount.hs"
-      component: "hcount:test:hcount"

@@ -1,0 +1,1448 @@
++TITLE: chart-svg
+
+[[https://hackage.haskell.org/package/hcount][file:https://img.shields.io/hackage/v/hcount.svg]] [[https://github.com/tonyday567/hcount/actions?query=workflow%3Ahaskell-ci][file:https://github.com/tonyday567/hcount/workflows/haskell-ci/badge.svg]]
+
+Counting of Haskell names and artifacts usage.
+
+* Usage
+Include the following ghc-options in the cabal.project.local file for the libraries you want to analyse:
+
+#+begin_quote
+ghc-options:
+  -fwrite-ide-info
+  -hiedir=.hie
+#+end_quote
+install:
+
+#+begin_src sh :results output
+cabal install hcount
+#+end_src
+
+See 'hcount --help' for options.
+
+#+begin_src sh :results output
+hcount
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Number of repos: 1
+Number of files: 1
+Total names: 1552
+Unique names: 239
+top names
+total names: 1552
+
+local     Semigroup     82
+local     Monad         69
+local     Functor       53
+local     Category      50
+local     Show          48
+local     Applicative    44
+local     n             42
+base      <>            41
+local     Foldable      38
+local     IsString      37
+top operators
+total operators: 201
+
+base      <>            41
+base      $             36
+base      .             23
+base      <$>           14
+base      <|>           12
+base      <*>            7
+base      $fCategoryTYPEFUN     5
+          /=             5
+base      $fMonoidList     3
+          &&             3
+top lower case functions
+total functions: 381
+
+base      putStrLn      24
+ttprsc    string        14
+base      fmap          11
+main      locname       11
+base      show          10
+ttprsc    char          10
+base      pure           9
+ptprs-pplctvhelp           8
+ptprs-pplctvlong           8
+ptprs-pplctvshort          8
+top upper case constructors
+total constructors: 179
+
+text      Text          33
+          False         16
+main      Loc           16
+main      HCountConfig    15
+          True          13
+          Bool           9
+main      Base           8
+main      Local          8
+main      Package        8
+ttprsc    Parser         8
+top local names
+total local names: 791
+
+local     Semigroup     82
+local     Monad         69
+local     Functor       53
+local     Category      50
+local     Show          48
+local     Applicative    44
+local     n             42
+local     Foldable      38
+local     IsString      37
+local     HasName       32
+#+end_example
+
+
+
+* Development
+
+** recursively find .hie directories
+
+org-mode provides a =curation= of historical ghci work, in between the complete backlog of computations, and a polished up module.
+
+It also enables a form of parallel type-tetris that can't be had with any repl.
+
+Note taking can be wider, and encompass shell commands, copy/pasted code snippets, sites visited, random thoughts and unexplored byways.
+
+#+begin_src haskell-ng :results output
+:set -XImportQualifiedPost
+import System.Directory
+import Data.List qualified as List
+:t readHieFiles
+path = List.intercalate "/"
+home <- getHomeDirectory
+base = path [home, "haskell"]
+xs <- getDirectoryContents base
+stem = ".hie"
+ds = (\d -> path [base,d,stem]) <$> filter (\x -> x /= "." && x /= "..") xs
+ds' <- filterM doesDirectoryExist ds
+ds'
+length ds'
+fs <- mconcat <$> mapM readHieFiles ds'
+length fs
+#+end_src
+
+#+RESULTS:
+: readHieFiles :: FilePath -> IO [HieFile]
+: ["/Users/tonyday567/haskell/numhask/.hie","/Users/tonyday567/haskell/hcount/.hie"]
+: 2
+: 18
+
+#+begin_src haskell-ng :results output
+cabals :: FilePath -> FilePath -> IO [String]
+cabals h d = do
+  cs <- getDirectoryContents (path [h, d])
+  let cs' = filter (\x -> x /= "." && x /= "..") cs
+  ps <- filterM (doesDirectoryExist . (\x -> path [h, d, x])) cs'
+  filterM (doesFileExist . cabalPath (path [h, d])) ps
+
+cabalPath :: FilePath -> FilePath -> FilePath
+cabalPath d x = path [d, x, x <> ".cabal"]
+
+path :: [FilePath] -> FilePath
+path = List.intercalate "/"
+#+end_src
+
+#+begin_src haskell-ng :results output
+import System.Directory.Recursive
+import System.Directory
+:t (\f -> isSuffixOf ".hie" f)
+hiedirs <- filter (isSuffixOf ".hie") <$> (getSubdirsRecursive "..")
+length hiedirs
+-- getDirectoryContents ".."
+#+end_src
+
+#+RESULTS:
+: (\f -> isSuffixOf ".hie" f) :: [Char] -> Bool
+: 2
+
+#+begin_src haskell-ng :results output
+-- getSubdirs
+:t doesDirectoryExist
+:t getDirectoryContents
+:t (getDirectoryContents "." >>= filterM doesDirectoryExist)
+hs <- fmap (filter (isSuffixOf ".hie")) (getDirectoryContents "." >>= filterM doesDirectoryExist)
+hs
+#+end_src
+
+#+RESULTS:
+: doesDirectoryExist :: FilePath -> IO Bool
+: getDirectoryContents :: FilePath -> IO [FilePath]
+: (getDirectoryContents "." >>= filterM doesDirectoryExist)
+:   :: IO [FilePath]
+: [".hie"]
+
+** report test
+#+begin_src haskell-ng :results output
+:set -XOverloadedLabels
+report (defaultOptions & set #recursive True & set #directory "../")
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Number of repos: 2
+Number of files: 18
+Total names: 14953
+Unique names: 1277
+top names
+total names: 14953
+
+local     a            893
+local     Additive     503
+local     Multiplicative   434
+local     (%,%)        415
+local     Integral     351
+local     Eq           287
+local     Ord          276
+local     Subtractive   257
+local     Num          254
+local     Divisive     164
+#+end_example
+
+#+begin_src sh :results output
+hcount -d ".." -r --topn 50
+#+end_src
+
+#+RESULTS:
+#+begin_example
+Number of repos: 19
+Number of files: 112
+Total names: 160272
+Unique names: 7437
+top names
+total names: 160272
+
+local     ~          11574
+local     a           4031
+local     GSetFieldProd  3146
+local     GSetFieldSum  2816
+local     Num         2604
+local     IsLabel     2545
+local     (%,,,,,,%)  2542
+local     Is          2449
+local     Eq          2373
+local     Functor     2228
+local     irred       2132
+local     IsString    2120
+local     Ord         2081
+local     GenericOptic  1724
+local     Additive    1553
+local     x           1496
+local     Applicative  1437
+local     HasShapeOf  1410
+local     Multiplicative  1404
+local     Show        1399
+local     Monad       1320
+local     Semigroup   1316
+local     LabelOptic  1273
+local     Dysfunctional  1272
+local     InterpSink  1156
+local     s           1151
+local     GFieldImpl  1096
+local     HasField    1093
+local     (%,%)        984
+local     Subtractive   932
+base      $            850
+local     b            824
+local     Foldable     821
+local     n            786
+local     Monoid       751
+          Double       745
+local     e            703
+local     Integral     696
+local     JoinKinds    674
+local     m            673
+base      &            667
+local     AppendIndices   658
+local     Generic      649
+local     xs           634
+local     TypeInferenceLoop   633
+base      <>           606
+local     Divisive     604
+base      <$>          598
+base      .            580
+local     c            570
+#+end_example
+
+** Adding cabal.project.local
+
+[[https://github.com/haskell/cabal/pull/7973][haskell/cabal#7973 Remove local options from global program options by patric...]]
+
+
+#+begin_src haskell-ng :results output
+addPCLs ".."
+#+end_src
+
+#+RESULTS:
+: 20
+
+#+begin_src haskell-ng :results output
+pcl = [i|program-options
+  ghc-options:
+    -fwrite-ide-info
+    -hiedir=.hie|]
+#+end_src
+
+- [X] subdirs
+- [X] if not exist pcl and exists cabal file, write pcl
+
+#+begin_src haskell-ng :results output
+xs <- getSubdirs ".."
+name = "project.cabal.local"
+
+#+end_src
+#+begin_src haskell-ng :results output
+d = "."
+xs <- getDirectoryContents d
+xs
+xs' = filter (\x -> x /= "." && x /= "..") xs
+xs'
+xs'' <- filterM (doesDirectoryExist . (\x -> path [d,x])) xs'
+xs''
+#+end_src
+
+#+RESULTS:
+: [".","..","hcount.cabal","app","LICENSE","test","dist-newstyle",".hie",".gitignore",".projectile",".gitattributes","cabal.project","readme.org",".git"]
+: ["hcount.cabal","app","LICENSE","test","dist-newstyle",".hie",".gitignore",".projectile",".gitattributes","cabal.project","readme.org",".git"]
+: ["app","test","dist-newstyle",".hie",".git"]
+
+#+begin_src haskell-ng :results output
+getDirectoryContents ".." >>=
+#+end_src
+
+#+RESULTS:
+: [".","..","huihua","xyzzy","numhask","hcount","eulerproject","mealy","box","formatn","prettychart","cabal-fix","poker-fold","numhask-space","iqfeed","box-socket","numhask-array","markup-parse","tonyday567","web-rep","dotparse","cabal-extras","perf","chart-svg-dev","anal","chart-svg","ephemeral"]
+
+** rerun cabal build
+
+#+begin_src haskell-ng :results output
+cabalRebuilds ".." ["eulerproject","perf","ephemeral"]
+#+end_src
+
+#+RESULTS:
+
+
+** pipeline
+
+*** name pipeline
+#+begin_src haskell-ng :results output
+:set -XOverloadedLabels
+:set -Wno-name-shadowing
+fss <- getFiles (defaultOptions & set #recursive True & set #directory "..")
+length fss
+length $ mconcat fss
+nodes = mconcat fss & fmap (hie_asts >>> getAsts >>> Map.toList) & mconcat & fmap snd & fmap astFlat & mconcat
+length nodes
+idents = nodes & fmap nodeIdentifiers & fmap Map.toList & mconcat & fmap fst
+length idents
+nms = [x| (Right x) <- idents]
+length nms
+nxs = toNameX <$> nms
+length nxs
+lxs = view #name <$> filter (\x -> module' x == "") nxs
+length lxs
+exs = filter (\x -> module' x /= "") nxs
+length exs
+#+end_src
+
+#+RESULTS:
+: 19
+: 112
+: 142422
+: 162341
+: 160917
+: 160917
+: 102704
+: 58213
+
+*** internal
+
+#+begin_src haskell-ng :results output
+:set -XOverloadedStrings
+import Text.Pretty.Simple
+mapM_ putStrLn $ formatCount 20 . first (\(c,n) -> padr' 6 (show c) <> (FP.utf8ToStr n)) <$>  (Main.top 10 $ (filter (const True) $ rp deconstructLocalName <$> lxs))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CCon  ~              11582
+CVars a               4037
+CCon  GSetFieldProd   3150
+CCon  GSetFieldSum    2819
+CCon  Num             2604
+CCon  IsLabel         2547
+CCon  (%,,,,,,%)      2544
+CCon  Is              2451
+CCon  Eq              2390
+CCon  Functor         2234
+#+end_example
+
+*** external names
+
+#+begin_src haskell-ng :results output
+:set -XOverloadedStrings
+import Text.Pretty.Simple
+mapM_ putStrLn $ formatCount . first show <$> (Main.top 10 exs)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+NameX {name = "$", module' = "GHC.Base", package = "base"}   860
+NameX {name = "Double", module' = "GHC.Types", package = "ghc-prim"}   745
+NameX {name = "&", module' = "Data.Function", package = "base"}   667
+NameX {name = "<>", module' = "GHC.Base", package = "base"}   613
+NameX {name = "<$>", module' = "Data.Functor", package = "base"}   606
+NameX {name = "Int", module' = "GHC.Types", package = "ghc-prim"}   533
+NameX {name = ".", module' = "GHC.Base", package = "base"}   450
+NameX {name = "view", module' = "Optics.Getter", package = "ptcs-cr-0.4.1.1-98cffce2"}   437
+NameX {name = "ByteString", module' = "Data.ByteString.Internal.Type", package = "bytstrng-0.11.5.3-92e9dc06"}   426
+NameX {name = "pure", module' = "GHC.Base", package = "base"}   395
+#+end_example
+
+*** packages
+
+#+begin_src haskell-ng :results output
+:set -XOverloadedStrings
+import Text.Pretty.Simple
+mapM_ putStrLn $ formatCount . first show <$> (Main.top 100 (view #package <$> exs))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+"base"       12905
+"ghc-prim"    6192
+"chart-svg-0.6.0.0-inplace"  4906
+"ptcs-cr-0.4.1.1-98cffce2"  4254
+"numhask-0.12-inplace"  3910
+"dotparse-0.1.0.0-inplace"  2278
+"poker-fold-0.1.1.0-inplace"  1839
+"numhask-array-0.12-inplace"  1753
+"huihua-0.0.1-inplace"  1609
+"nmhsk-0.11.1.0-faaa53a7"  1478
+"numhask-space-0.11.1.0-inplace"  1436
+"web-rep-0.12.1.0-inplace"  1217
+"fltprs-0.5.0.1-f0b7d2c0"  1133
+"cabal-fix-0.0.0.1-inplace"  1074
+"markup-parse-0.1.1-inplace"  1025
+"box-0.9.3.1-inplace"   982
+"nmhsk-0.11.1.0-c4b7f3f4"   957
+"nmhsk-spc-0.11.1.0-3fea6d04"   872
+"bytstrng-0.11.5.3-92e9dc06"   675
+"main"         587
+"mrkp-prs-0.1.1-520c22df"   560
+"mealy-0.4.4.1-inplace"   475
+"Cabal-syntax-3.10.2.0-262d"   430
+"formatn-0.3.0.1-inplace"   426
+"chrt-svg-0.6.0.0-43783adf"   307
+"box-socket-0.5.1.0-inplace"   295
+"containers-0.6.8-9a73"   276
+"vctr-0.13.1.0-53f2640d"   271
+"txt-2.1-11fbfeb0"   249
+"fltprs-0.5.0.1-877b8a9e"   243
+"strng-ntrplt-0.3.2.1-db1e0223"   234
+"bytestring-0.12.0.2-1ecd"   215
+"text-2.1-0f57"   207
+"time-1.12.2-c858"   206
+"prttyprntr-1.7.1-f80b5d33"   188
+"bx-0.9.3.1-1dd1c798"   182
+"transformers-0.6.1.0-3ba6"   151
+"ghc-bignum"   136
+"chrt-svg-0.6.0.0-f72557de"   132
+"djnctns-4.4.2-38551889"   128
+"prettychart-0.2.0.0-inplace"   126
+"tr-dff-0.3.0.1-853fafb0"   101
+"anal-0.0.4-inplace"    94
+"mtl-2.3.1-aa9c"    93
+"deepseq-1.5.0.0-5710"    72
+"frmtn-0.3.0.1-38cf8573"    61
+"ptprs-pplctv-0.18.1.0-2f40ea55"    61
+"ptprs-pplctv-0.18.1.0-4b730158"    57
+"tr-dff-0.3.0.1-f3b5fed2"    56
+"ptprs-pplctv-0.17.1.0-23bedcae"    52
+"nmhsk-rry-0.11.0.1-2f9fb78f"    51
+"ttprsc-0.14.4-21bb6c5a"    51
+"wbsckts-0.12.7.3-124709fd"    49
+"ths-1.2-6374c726"    48
+"nmhsk-rry-0.11.0.1-4518150f"    47
+"Clr-0.3.3-53d294fb"    45
+"kn-xtnsns-5.2.5-d8b906f0"    43
+"rndm-1.2.1.1-8521ef54"    43
+"tdgst-0.3-a75774fe"    37
+"prfnctrs-5.6.2-17253ad5"    35
+"rndm-1.2.1.1-88dbb951"    35
+"lgbrc-grphs-0.7-b1fc191a"    33
+"pretty-1.1.3.6-913b"    29
+"ghc-9.8.1-a76c"    25
+"nmhsk-spc-0.11.1.0-5dc0ce73"    25
+"nrdrd-cntnrs-0.2.19.1-73cb18ca"    24
+"chart-svg-dev-0.0.0.1-inplace"    23
+"mly-0.4.4.1-9bc8ee54"    23
+"directory-1.3.8.1-46c1"    19
+"dstrbtv-0.6.2.1-59242397"    19
+"bfnctrs-5.6.1-c9757771"    18
+"cntrvrnt-1.5.5-da88f27b"    18
+"sctty-0.21-55a18993"    18
+"stm-2.5.2.1-612d"    18
+"sync-2.2.5-9ae5623e"    17
+"kn-xtnsns-5.2.5-60b8aee7"    15
+"ptcs-xtr-0.4.2.1-6430c9cb"    14
+"exceptions-0.10.7-69a4"    13
+"tr-0.5.1.1-7abb60ad"    12
+"template-haskell"    11
+"prttychrt-0.2.0.0-6cdf288d"    10
+"sync-2.2.5-97d5fe28"    10
+"tsty-1.5-38db09d4"    10
+"w-mddlwr-sttc-0.9.2-7859c55c"    10
+"prmtv-0.9.0.0-8ba1a019"     9
+"ntwrk-smpl-0.4.5-f6b35568"     8
+"cbcbzr-0.6.0.7-f5df282d"     7
+"ntwrk-3.1.4.0-108d8983"     7
+"smgrpds-6.0.0.1-71e84e8b"     7
+"ttprsc-0.14.4-b8c5041b"     7
+"djnctns-4.4.2-00a3e4f3"     6
+"strng-ntrplt-0.3.2.1-95e59eb3"     6
+"frmtn-0.3.0.1-dff8cfd2"     5
+"ths-1.2-e00830ff"     5
+"vctr-lgrthms-0.9.0.1-7241c764"     5
+"hshbl-1.4.3.0-3478968c"     4
+"strng-ntrplt-0.2.0.1-66ada066"     4
+"tsty-gldn-2.3.5-54804c7a"     4
+"dlst-1.0-bb3ea86b"     3
+"fkr-0.0.0.2-508afe01"     3
+#+end_example
+
+#+begin_src haskell-ng :results output
+mapM_ putStrLn $ formatCount <$> Main.top 10 (rp' package' . view #package <$> exs)
+
+#+end_src
+
+#+RESULTS:
+#+begin_example
+base         12919
+ghc-prim      6194
+chart-svg     4906
+ptcs-cr       4254
+numhask       3910
+nmhsk         2435
+dotparse      2278
+poker-fold    1839
+numhask-array  1753
+huihua        1609
+#+end_example
+
+*** modules'
+
+#+begin_src haskell-ng :results output
+:set -XOverloadedStrings
+import Text.Pretty.Simple
+mapM_ putStrLn $ formatCount . first show <$> (Main.top 10 (view #module' <$> exs))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+"GHC.Base"    4568
+"GHC.Types"   3154
+"GHC.Classes"  2960
+"NumHask.Algebra.Additive"  1367
+"MarkupParse"  1280
+"DotParse.Types"  1244
+"Chart.Hud"   1222
+"NumHask.Algebra.Multiplicative"  1143
+"Optics.Internal.Generic"  1041
+"Chart.Primitive"   998
+#+end_example
+
+*** name
+
+#+begin_src haskell-ng :results output
+mapM_ putStrLn $ formatCount <$> Main.top 100 (view #name <$> exs)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+$              860
+Double         745
+&              667
+<>             613
+<$>            607
+.              588
+ByteString     548
+Int            533
+Point          505
+,*              457
+Array          443
+view           437
++              427
+pure           395
+Just           389
+set            385
+-              338
+IO             335
+%              289
+[]             284
+fromIntegral   277
+:              271
+==             271
+fmap           260
+Attr           257
+Parser         257
+Rect           247
+Eq#            246
+Nothing        236
+/              231
+Eq             225
+Text           225
+bool           216
+Show           212
+Maybe          210
+mempty         208
+.~             200
+Field          199
+$fFunctorList   189
+C:Show         188
+$fOrdInt       185
+C:Eq           183
+Range          182
+$fIsLabelnameOptic   181
+$fLabelOpticnamekstab   181
+(%,,,,,,%)     181
+Bool           181
+$fDysfunctionalkkkkkkfieldkstab   180
+$fGFieldImplnamestab   180
+$fGSetFieldProd[]M1M1r   180
+$fGSetFieldSumPathLeafM1M1b   180
+$fGSetFieldSumpathM1M1b   180
+$fGenericOpticSymbolrepDefinednameA_Lensstab   180
+$fHasShapeOfkab   180
+$fTypeInferenceLoopkkkkkkkkkmsg1msg2msg3fieldkstab   180
+(%%)           177
+one            177
+zero           177
+$p1(%,%)       166
+$p0(%,%)       163
+$fGSetFieldProd::*::*:b0   161
+$fGSetFieldProd::*::*:b2   160
+(%,%)          152
+Ord            146
+Generic        132
+length         132
+withEnsure     131
+&&             130
+C:Generic      126
+MkCoercible    124
+<*>            121
+$fNumInt       120
+word8Unsafe    120
+Emitter        118
+True           113
+$fFoldableList   112
+Colour         112
+show           112
+$fNumDouble    111
+ChartTree      111
+HasShape       111
+ID             111
+Box            109
+$fIsA_LensA_Getter   107
+Proxy          107
+Chart          105
+Additive       104
+Item           104
+RankS          102
+<|>            101
+Markup         101
+$fIsA_LensA_Setter   100
+id              95
+char            94
+ChartOptions    92
+$fApplicativeParserT    90
+String          90
+$fSemigroupList    88
+$fNumWord8      87
+index           86
+#+end_example
+
+*** all names
+
+#+begin_src haskell-ng :results output
+allNames = (second FP.utf8ToStr <$> rp deconstructLocalName <$> lxs) NumHask.Prelude.<> ((CExt,) . view #name <$> exs)
+length allNames
+mapM_ putStrLn $ formatCount 20 . first (\(c,n) -> padr' 6 (show c) <> n) <$>  (Main.top 10 $ (filter (const True) $ allNames))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+160917
+CCon  ~              11582
+CVars a               4037
+CCon  GSetFieldProd   3150
+CCon  GSetFieldSum    2819
+CCon  Num             2604
+CCon  IsLabel         2547
+CCon  (%,,,,,,%)      2544
+CCon  Is              2451
+CCon  Eq              2390
+CCon  Functor         2234
+#+end_example
+
+**** operators
+
+#+begin_src haskell-ng :results output
+:set -Wno-x-partial
+mapM_ putStrLn $ formatCount 20 <$>  (Main.top 40 $ snd <$> (filter (not . FP.isLatinLetter . head . snd) $ allNames))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+~                    11623
+(%,,,,,,%)            2725
+(%,%)                 1136
+$                      860
+&                      667
+<>                     663
+==                     637
+<$>                    607
+.                      590
+,*                      509
++                      481
+/=                     421
+-                      385
+(%%)                   361
+%                      291
+[]                     284
+:                      271
+/                      258
+.~                     200
+$fFunctorList          189
+$fOrdInt               185
+$fIsLabelnameOptic     181
+$fLabelOpticnamekstab   181
+$fDysfunctionalkkkkkkfieldkstab   180
+$fGFieldImplnamestab   180
+$fGSetFieldProd[]M1M1r   180
+$fGSetFieldSumPathLeafM1M1b   180
+$fGSetFieldSumpathM1M1b   180
+$fGenericOpticSymbolrepDefinednameA_Lensstab   180
+$fHasShapeOfkab        180
+$fTypeInferenceLoopkkkkkkkkkmsg1msg2msg3fieldkstab   180
+>=                     173
+$p1(%,%)               166
+<=                     166
+$p0(%,%)               163
+$fGSetFieldProd::*::*:b0   161
+$fGSetFieldProd::*::*:b2   160
+<                      153
+>                      150
+<*>                    141
+#+end_example
+
+**** local vars
+
+
+#+begin_src haskell-ng :results output
+:set -Wno-x-partial
+mapM_ putStrLn $ formatCount 20 . first (\(c,n) -> padr' 6 (show c) <> n) <$>  (Main.top 40 $ (filter (\x -> ((CVars==) . fst) x && (Char.isLower . head . snd) x) $ allNames))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CVars a               4037
+CVars irred           2134
+CVars x               1501
+CVars s               1157
+CVars b                824
+CVars n                798
+CVars e                703
+CVars m                673
+CVars xs               640
+CVars c                571
+CVars p                566
+CVars f                530
+CVars r                514
+CVars y                421
+CVars i                383
+CVars d                378
+CVars t                339
+CVars l                289
+CVars g                266
+CVars cs               206
+CVars o                203
+CVars show             188
+CVars showList         188
+CVars showsPrec        188
+CVars x'               188
+CVars rule             179
+CVars go               166
+CVars cfg              154
+CVars v                153
+CVars k                152
+CVars ds               147
+CVars h                143
+CVars ann              132
+CVars bs               127
+CVars from             126
+CVars to               126
+CVars co               125
+CVars xs'              113
+CVars w                108
+CVars fs               107
+#+end_example
+
+**** lowers
+
+#+begin_src haskell-ng :results output
+:set -Wno-x-partial
+mapM_ putStrLn $ formatCount 20 . first (\(c,n) -> padr' 6 (show c) <> n) <$>  (Main.top 40 $ (filter (\x -> ((CExt==) . fst) x && (Char.isLower . head . snd) x) $ allNames))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CExt  view             437
+CExt  pure             395
+CExt  set              385
+CExt  fromIntegral     277
+CExt  fmap             260
+CExt  bool             216
+CExt  mempty           208
+CExt  one              177
+CExt  zero             177
+CExt  length           132
+CExt  withEnsure       131
+CExt  word8Unsafe      120
+CExt  show             112
+CExt  id                95
+CExt  char              94
+CExt  index             86
+CExt  dotPrint          85
+CExt  negate            85
+CExt  ws_               81
+CExt  snd               78
+CExt  shape             77
+CExt  toList            77
+CExt  tabulate          74
+CExt  pretty            73
+CExt  maybe             72
+CExt  element           71
+CExt  fromList          70
+CExt  mconcat           69
+CExt  pack              68
+CExt  floor             65
+CExt  fst               65
+CExt  over              65
+CExt  zipWith           64
+CExt  build             61
+CExt  finalize          61
+CExt  ofString          61
+CExt  take              60
+CExt  otherwise         58
+CExt  token             58
+CExt  dotParse          56
+#+end_example
+
+**** uppers
+
+#+begin_src haskell-ng :results output
+:set -Wno-x-partial
+mapM_ putStrLn $ formatCount 20 . first (\(c,n) -> padr' 6 (show c) <> n) <$>  (Main.top 40 $ (filter (\x -> (Char.isUpper . head . snd) x) $ allNames))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+CCon  GSetFieldProd   3150
+CCon  GSetFieldSum    2819
+CCon  Num             2604
+CCon  IsLabel         2547
+CCon  Is              2451
+CCon  Eq              2390
+CCon  Functor         2234
+CCon  IsString        2120
+CCon  Ord             2058
+CCon  GenericOptic    1725
+CCon  Additive        1551
+CCon  Applicative     1431
+CCon  HasShapeOf      1410
+CCon  Show            1410
+CCon  Multiplicative  1404
+CCon  Monad           1337
+CCon  Semigroup       1330
+CCon  LabelOptic      1274
+CCon  Dysfunctional   1273
+CCon  InterpSink      1156
+CCon  GFieldImpl      1097
+CCon  HasField        1094
+CCon  Subtractive      913
+CCon  Foldable         823
+CExt  Double           745
+CCon  Monoid           731
+CCon  Integral         680
+CCon  JoinKinds        674
+CCon  AppendIndices    658
+CCon  Generic          649
+CCon  TypeInferenceLoop   634
+CCon  Divisive         591
+CExt  ByteString       548
+CCon  FromInteger      534
+CExt  Int              534
+CExt  Point            505
+CCon  Fractional       457
+CExt  Array            443
+CCon  Category         397
+CCon  HasShape         397
+#+end_example
+
+* old example
+
+#+begin_src haskell-ng :results output
+-- deconstruction of:
+-- sum = P.foldr (+) zero
+--
+-- P.foldr
+-- NodeInfo {nodeAnnotations = fromList [("HsVar","HsExpr"),("HsWrap","HsExpr")], nodeType = [7,24], nodeIdentifiers = fromList [(Right NameMeta {nameMetaPackage = "base", nameMetaModuleName = ModuleName {unModuleName = "Data.Foldable"}, nameMetaName = "foldr"},IdentifierDetails {identType = Just 24, identInfo = fromList [Use]})]}
+--
+-- (+)
+--
+-- NodeInfo {nodeAnnotations = fromList [("HsVar","HsExpr"),("HsWrap","HsExpr")], nodeType = [5,30], nodeIdentifiers = fromList [(Right NameMeta {nameMetaPackage = "numhask-0.7.0.1-7TAYiN9QGfDA9z2ZI270ii", nameMetaModuleName = ModuleName {unModuleName = "NumHask.Algebra.Additive"}, nameMetaName = "+"},IdentifierDetails {identType = Just 30, identInfo = fromList [Use]})]}
+--
+-- zero
+--
+-- NodeInfo {nodeAnnotations = fromList [("HsVar","HsExpr"),("HsWrap","HsExpr")], nodeType = [1,32], nodeIdentifiers = fromList [(Right NameMeta {nameMetaPackage = "numhask-0.7.0.1-7TAYiN9QGfDA9z2ZI270ii", nameMetaModuleName = ModuleName {unModuleName = "NumHask.Algebra.Additive"}, nameMetaName = "zero"},IdentifierDetails {identType = Just 32, identInfo = fromList [Use]})]}
+--
+-- LogField $ negate x
+--
+-- NodeInfo {nodeAnnotations = fromList [("HsConLikeOut","HsExpr"),("HsVar","HsExpr"),("HsWrap","HsExpr")], nodeType = [1246,1084], nodeIdentifiers = fromList [(Right NameMeta {nameMetaPackage = "numhask-0.7.0.1-7TAYiN9QGfDA9z2ZI270ii", nameMetaModuleName = ModuleName {unModuleName = "NumHask.Data.LogField"}, nameMetaName = "LogField"},IdentifierDetails {identType = Nothing, identInfo = fromList [Use]})]}
+--
+-- NodeInfo {nodeAnnotations = fromList [("HsVar","HsExpr"),("HsWrap","HsExpr")], nodeType = [1247,1256], nodeIdentifiers = fromList [(Right NameMeta {nameMetaPackage = "base", nameMetaModuleName = ModuleName {unModuleName = "GHC.Base"}, nameMetaName = "$"},IdentifierDetails {identType = Just 1256, identInfo = fromList [Use]})]}
+--
+-- NodeInfo {nodeAnnotations = fromList [("HsVar","HsExpr")], nodeType = [1220], nodeIdentifiers = fromList [(Right $_in$x,IdentifierDetails {identType = Just 1220, identInfo = fromList [Use]})]}
+--
+-- lf = fs !! 4
+-- lf207s = filter (\x -> 207 == (srcLocLine . realSrcSpanStart . snd $ x)) $ (mconcat $ astFlat <$> asts [lf])
+#+end_src
+
+* old results
+
+-- | current personal run
+--
+-- > myhc = HCountConfig ((\fp -> "../" <> fp <> "/.hie") <$> [ "box","box-csv","box-socket","chart-svg","chart-svg-graphviz","ellipse","ephemeral","formatn","hcount","iqfeed","mealy","numhask","numhask-array","numhask-backprop","numhask-bench","numhask-space","perf","readme-lhs","web-rep"]) ["lucid", "web-rep", "backprop"] 100 True True True True True
+-- > report myhc
+-- Number of repos: 19
+-- Number of files: 102
+-- Total names: 31919
+-- Unique names: 3103
+-- top names
+-- total names: 31919
+--
+-- base      $            828
+-- local     x            696
+-- base      fromLabel    613
+-- base      .            536
+-- local     a            510
+-- numhask   *            510
+-- base      &            499
+-- lens      .~           483
+-- base      <$>          479
+-- base      <>           422
+-- local     IsLabel      418
+-- lens      ^.           411
+-- local     s            400
+-- numhask   +            378
+-- local     c            299
+-- local     n            284
+-- local     y            263
+-- numhask   -            254
+-- numhask   /            252
+-- local     showList     250
+-- local     showsPrec    249
+-- local     show         242
+-- base      Show         241
+-- local     /=           236
+-- local     ==           234
+--          Eq           234
+-- local     f            220
+-- base      Just         218
+-- base      Generic      216
+-- numhask-spacePoint        205
+-- base      pure         200
+-- local     r            182
+-- local     xs           180
+-- numhask   zero         176
+-- base      mempty       173
+-- local     b            172
+--          ==           172
+-- numhask   one          168
+-- local     p            167
+-- local     t            164
+-- base      Nothing      161
+--          []           155
+-- local     d            151
+-- protolude show         143
+-- local     l            141
+-- numhask   fromIntegral   140
+-- chart-svg Chart        131
+-- local     e            127
+-- local     i            110
+-- local     from         108
+-- local     to           108
+-- protolude bool         105
+-- base      fmap          97
+-- local     cs            96
+-- base      maybe         90
+-- local     o             87
+-- local     g             86
+-- local     m             84
+-- local     w             83
+-- local     Epsilon       80
+-- local     x'            80
+-- numhask-spacePointXY       78
+-- local     go            76
+--          :             76
+-- base      id            75
+-- base      <*>           74
+-- lucid     with          74
+-- base      snd           70
+-- local     cfg           67
+-- base      otherwise     67
+-- local     v             66
+-- local     z             66
+-- lucid     term          66
+-- base      fst           65
+-- base      zipWith       65
+-- chart-svg-graphvizDependency    64
+-- web-rep   class__       64
+-- local     step          61
+-- local     ts            60
+--          pack          57
+-- base      !!            54
+-- numhask   negate        54
+-- local     -             53
+-- local     Norm          51
+-- local     a'            51
+-- local     Distributive    50
+--          True          50
+-- lens      %~            50
+-- local     h             48
+-- local     y'            48
+-- base      mconcat       47
+-- local     Signed        46
+-- base      reverse       45
+-- local     fromIntegral    44
+--          False         44
+-- box       commit        44
+-- chart-svg LineA         44
+-- numhask   FromIntegral    44
+-- lucid     toHtml        43
+-- numhask   pi            43
+-- top operators
+-- total operators: 6330
+--
+-- base      $            828
+-- base      .            536
+-- numhask   *            510
+-- base      &            499
+-- lens      .~           483
+-- base      <$>          479
+-- base      <>           422
+-- lens      ^.           411
+-- numhask   +            378
+-- numhask   -            254
+-- numhask   /            252
+--          ==           172
+--          []           155
+--          :             76
+-- base      <*>           74
+-- base      !!            54
+-- lens      %~            50
+--          &&            42
+--          ()            39
+--          <             31
+-- bifunctors<<*>>         29
+-- base      <|>           28
+--          >             28
+-- numhask   .*            24
+-- base      +             22
+--          <=            21
+-- numhask   ^             21
+--          >=            20
+-- numhask   :%            20
+-- lens      ?~            19
+--          ||            18
+-- numhask   :+            17
+-- base      *             16
+-- base      ++            16
+--          (,)           15
+-- lens      _1            15
+-- numhask   **            15
+-- base      *>            14
+-- base      -             14
+-- box       <$.>          13
+--          /=            12
+-- numhask   /.            11
+-- base      :|             9
+-- numhask   /\             9
+-- numhask   \/             9
+-- numhask-space_x             9
+-- numhask-space_y             9
+-- base      >>             8
+-- lens      _Just          8
+-- numhask-space...            8
+-- numhask   ^^             7
+-- base      <*             6
+-- lens      .=             6
+-- numhask-space>.<            6
+-- base      <$             5
+-- chart-svg $sel:rstyle:AxisBar     5
+-- microlens .~             5
+-- numhask-space|.|            5
+-- microlens ^.             4
+-- numhask-space|.             4
+--          !              3
+-- chart-svg $sel:positions:TickComponents     3
+-- chart-svg $sel:xys:Chart     3
+-- lens      _2             3
+-- base      $!             2
+-- base      **             2
+-- base      /              2
+--          |>             2
+-- chart-svg $sel:color':Colour'     2
+-- chart-svg $sel:unhud:Hud     2
+-- clay      ?              2
+-- lens      %=             2
+-- numhask   ⊕              2
+-- vector    !              2
+-- base      $>             1
+-- base      %              1
+-- base      =<<            1
+-- base      >=>            1
+-- base      >>=            1
+--          (,,)           1
+--          <|             1
+-- box       <*.>           1
+-- chart-svg $sel:annotation:Chart     1
+-- chart-svg $sel:labels:TickComponents     1
+-- hmatrix   <>             1
+-- hmatrix   ><             1
+-- numhask   $c:+           1
+-- numhask   $cLogField     1
+-- numhask   $tComplex      1
+-- numhask   $tLogField     1
+-- numhask   *.             1
+-- numhask-space+/-            1
+-- numhask-space<.>            1
+-- numhask-space|<|            1
+-- numhask-space|>|            1
+-- semigroupoids<.>            1
+-- unordered-containers!              1
+-- top lower case functions
+-- total functions: 7250
+--
+-- base      fromLabel    613
+-- base      pure         200
+-- numhask   zero         176
+-- base      mempty       173
+-- numhask   one          168
+-- protolude show         143
+-- numhask   fromIntegral   140
+-- protolude bool         105
+-- base      fmap          97
+-- base      maybe         90
+-- base      id            75
+-- base      snd           70
+-- base      otherwise     67
+-- base      fst           65
+-- base      zipWith       65
+--          pack          57
+-- numhask   negate        54
+-- base      mconcat       47
+-- base      reverse       45
+-- box       commit        44
+-- numhask   pi            43
+-- chart-svg defaultLineStyle    39
+-- chart-svg palette1      36
+-- numhask   sin           36
+-- numhask   cos           33
+-- base      const         32
+--          unpack        32
+-- box       emit          32
+-- chart-svg writeChartSvg    31
+-- base      liftIO        30
+-- numhask-spacelower         30
+-- base      fromIntegral    29
+-- base      length        29
+-- base      second        29
+-- base      fromMaybe     28
+-- base      take          28
+-- base      abs           27
+-- base      zip           27
+-- chart-svg defaultHudOptions    27
+-- chart-svg ellipse       27
+--          max           26
+--          min           26
+-- chart-svg defaultTextStyle    26
+-- numhask   floor         26
+-- numhask-spaceupper         26
+-- base      return        25
+-- base      fromInteger    24
+-- box       glue          24
+-- chart-svg fromV2        24
+-- numhask-arrayshape         24
+-- attoparsectakeText      23
+-- chart-svg defaultGlyphStyle    23
+-- foldl     fold          23
+--          lift          22
+-- chart-svg fromRGB       22
+--          addDays       21
+-- base      bimap         20
+-- chart-svg defaultRectStyle    20
+-- attoparsecchar          19
+-- numhask   exp           19
+-- numhask   sum           19
+-- base      drop          18
+-- base      fromString    18
+-- base      show          18
+-- adjunctionsindex         18
+-- numhask   abs           18
+-- base      foldl'        17
+-- adjunctionstabulate      17
+-- lens      use           17
+-- numhask   sqrt          17
+-- numhask   two           17
+-- numhask-arrayindex         17
+-- base      either        16
+-- box       mapE          16
+-- box       toStdout      16
+-- box-csv   int'          16
+-- base      flip          15
+-- base      natVal        15
+-- base      throw         15
+-- attoparsecstring        15
+-- chart-svg defaultSvgOptions    15
+-- mmorph    hoist         15
+-- numhask   fromBaseRational    15
+-- numhask-arraytabulate      15
+-- numhask-spacefoldRect      15
+-- profunctorslmap          15
+-- base      negate        14
+-- base      signum        14
+-- base      toRational    14
+-- chart-svg defaultTitle    14
+-- chart-svg opac          14
+-- numhask-spaceaspect        14
+-- numhask-spacefromNominalDiffTime    14
+-- numhask-spacespace1        14
+-- numhask-spacetoNominalDiffTime    14
+-- numhask-spacetoPoint       14
+-- numhask-spacetoRect        14
+--          addUTCTime    13
+-- box-csv   double'       13
+-- chart-svg setOpac       13
+-- top upper case constructors
+-- total constructors: 4109
+--
+-- base      Show         241
+--          Eq           234
+-- base      Just         218
+-- base      Generic      216
+-- numhask-spacePoint        205
+-- base      Nothing      161
+-- chart-svg Chart        131
+-- numhask-spacePointXY       78
+-- chart-svg-graphvizDependency    64
+--          True          50
+--          False         44
+-- chart-svg LineA         44
+-- numhask   FromIntegral    44
+-- numhask-spaceRect          42
+-- chart-svg Colour        40
+-- numhask   ToIntegral    37
+-- chart-svg RectA         35
+-- numhask-spaceRange         34
+-- base      Functor       31
+-- box       Box           30
+-- numhask   Additive      29
+-- numhask   Multiplicative    29
+-- base      Left          28
+-- chart-svg TextA         28
+-- numhask   Subtractive    28
+-- numhask   JoinSemiLattice    27
+-- numhask   MeetSemiLattice    27
+-- numhask-spaceRectXY        27
+-- box       Emitter       26
+-- base      Right         25
+-- chart-svg GlyphA        25
+-- numhask   Distributive    25
+-- numhask   Signed        25
+-- numhask-spaceP             25
+--          Ord           23
+-- foldl     Fold          22
+-- numhask   Epsilon       22
+-- base      Semigroup     21
+-- box       Committer     21
+-- box       Cont          21
+-- base      Proxy         20
+-- reanimate-svgNum           20
+-- language-javascriptJSSemi        19
+-- numhask   BoundedJoinSemiLattice    19
+-- numhask   InvolutiveRing    19
+-- numhask   ToRatio       19
+-- readme-lhsBlock         19
+-- chart-svg PlaceBottom    18
+-- language-javascriptJSAstProgram    18
+-- language-javascriptJSExpressionStatement    18
+-- numhask   BoundedMeetSemiLattice    18
+-- numhask   Integral      18
+-- base      Foldable      17
+-- base      Traversable    17
+-- numhask   Norm          17
+-- base      Last          16
+-- base      Monoid        16
+-- mealy     M             16
+-- numhask   LogField      16
+-- numhask-spaceR             16
+--          UTCTime       15
+-- base      Applicative    14
+-- base      Read          14
+-- chart-svg LineI         14
+-- numhask   Divisive      14
+-- numhask   FromInteger    14
+-- numhask   NumHaskException    14
+-- numhask-arrayArray         14
+-- chart-svg AnchorStart    13
+-- chart-svg Hud           12
+-- chart-svg LineCapRound    12
+-- chart-svg-graphvizRing          12
+-- language-javascriptJSNoAnnot     12
+-- numhask   Field         12
+-- readme-lhsCode          12
+-- chart-svg FixedAspect    11
+-- chart-svg PathA         11
+-- chart-svg PlaceLeft     11
+-- chart-svg PlaceRight    11
+-- chart-svg-graphvizField         11
+-- chart-svg-graphvizNumHaskCluster    11
+-- chart-svg AnchorEnd     10
+-- chart-svg PlaceTop      10
+-- numhask   ExpField      10
+-- numhask   UpperBoundedField    10
+-- numhask-spaceMidPos        10
+-- chart-svg ArcInfo        9
+-- chart-svg ArcPosition     9
+-- chart-svg-graphvizAdditive       9
+-- chart-svg-graphvizAssociative     9
+-- chart-svg-graphvizGroupCluster     9
+-- chart-svg-graphvizMultiplicative     9
+-- chart-svg-graphvizUnital         9
+-- numhask   LowerBoundedField     9
+-- numhask   QuotientField     9
+-- numhask-spaceOuterPos       9
+-- chart-svg BlankA         8
+-- chart-svg ChartSvg       8
+-- chart-svg RectStyle      8
+-- chart-svg StartI         8
+-- top local names
+-- total local names: 13262
+--
+-- local     x            696
+-- local     a            510
+-- local     IsLabel      418
+-- local     s            400
+-- local     c            299
+-- local     n            284
+-- local     y            263
+-- local     showList     250
+-- local     showsPrec    249
+-- local     show         242
+-- local     /=           236
+-- local     ==           234
+-- local     f            220
+-- local     r            182
+-- local     xs           180
+-- local     b            172
+-- local     p            167
+-- local     t            164
+-- local     d            151
+-- local     l            141
+-- local     e            127
+-- local     i            110
+-- local     from         108
+-- local     to           108
+-- local     cs            96
+-- local     o             87
+-- local     g             86
+-- local     m             84
+-- local     w             83
+-- local     Epsilon       80
+-- local     x'            80
+-- local     go            76
+-- local     cfg           67
+-- local     v             66
+-- local     z             66
+-- local     step          61
+-- local     ts            60
+-- local     -             53
+-- local     Norm          51
+-- local     a'            51
+-- local     Distributive    50
+-- local     h             48
+-- local     y'            48
+-- local     Signed        46
+-- local     fromIntegral    44
+-- local     sconcat       42
+-- local     stimes        42
+-- local     rx            41
+-- local     pl            40
+-- local     aboutEqual    39
+-- local     phi           39
+-- local     <$            38
+-- local     nearZero      37
+-- local     ps            37
+-- local     toIntegral    37
+-- local     zero          37
+-- local     c'            36
+-- local     adj           34
+-- local     ds            34
+-- local     epsilon       34
+-- local     one           33
+-- local     u             33
+-- local     mconcat       32
+-- local     div           31
+-- local     fmap          31
+-- local     mod           31
+-- local     quot          31
+-- local     rem           31
+-- local     start         31
+-- local     Field         30
+-- local     ry            30
+-- local     so            30
+-- local     *             29
+-- local     +             29
+-- local     x2            29
+-- local     xs'           29
+-- local     negate        28
+-- local     p1            28
+-- local     /\            27
+-- local     QuotientField    27
+-- local     Subtractive    27
+-- local     \/            27
+-- local     q             27
+-- local     ann           26
+-- local     fa            26
+-- local     JoinSemiLattice    25
+-- local     MeetSemiLattice    25
+-- local     abs           25
+-- local     conn          25
+-- local     end           25
+-- local     sign          25
+-- local     /             24
+-- local     >             24
+-- local     >=            24
+-- local     compare       24
+-- local     f'            24
+-- local     max           24
+-- local     min           24
+-- local     pc            24
+-- local     <             23
