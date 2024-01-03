@@ -1,12 +1,12 @@
 +TITLE: hcount
 
-[[https://hackage.haskell.org/package/hcount][file:https://img.shields.io/hackage/v/hcount.svg]] [[https://github.com/tonyday567/hcount/actions?query=workflow%3Ahaskell-ci][file:https://github.com/tonyday567/hcount/workflows/haskell-ci/badge.svg]]
+[[https://hackage.haskell.org/package/hcount][file:https://img.shields.io/hackage/v/hcount.svg]]
 
 Counting of Haskell names and artifacts usage.
 
 * Usage
 
-#+begin_src sh :results output
+#+begin_src sh :results output :exports both
 hcount --help
 #+end_src
 
@@ -91,15 +91,13 @@ The other commands should be used cautiously, and will cause modification to Has
 
 ~hcount addcpl~ will add the necessary ghc-options via adding a =cabal.project.local= file to the project(s). It will not overwrite existing files.
 
-[[https://github.com/haskell/cabal/pull/7973][haskell/cabal#7973 Remove local options from global program options by patric...]]
-
 The options can also be manually added somewhere:
 
-#+begin_quote
+#+begin_example
 ghc-options:
   -fwrite-ide-info
   -hiedir=.hie
-#+end_quote
+#+end_example
 
 ~hcount build~ will build the project(s) and thus refresh hie files, prior to reporting.
 
@@ -113,7 +111,7 @@ This section contains code snippets used in the development of the app.
 
 Results for the snippet below and the app should be the same.
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 report defaultOptions
 #+end_src
 
@@ -133,7 +131,7 @@ CExt  <>                36
 CCon  Ord               34
 #+end_example
 
-#+begin_src sh :results output
+#+begin_src sh :results output :exports both
 hcount report
 #+end_src
 
@@ -159,7 +157,7 @@ These snippets were used to develop and construct the pipeline from hie files to
 
 *** name pipeline
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 :set -XOverloadedLabels
 :set -Wno-name-shadowing
 fss <- getFiles defaultOptions
@@ -188,7 +186,7 @@ length xs
 
 There are a lot of internal Constructor names coming from GHC and these dominate the top 10 lists.
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 :set -XOverloadedStrings
 xs' = ns & fmap toNameX
 lxs = view #name <$> filter (\x -> module' x == "") xs'
@@ -213,7 +211,7 @@ $_in$$dShow             38
 
 *** module'
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 reportTopX 10 (const True) id (view #module' <$> xs')
 #+end_src
 
@@ -233,7 +231,7 @@ Data.Functor            22
 
 *** package
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 reportTopX 10 (const True) id (view #package <$> xs')
 #+end_src
 
@@ -252,7 +250,7 @@ directory-1.3.8.1-46c1     9
 #+end_example
 
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 reportTopX 10 (const True) id (rp' package' <$> (filter (/= "") (view #package <$> xs')))
 #+end_src
 
@@ -272,7 +270,7 @@ filepath                 8
 
 *** external names
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 reportTopX 10 (const True) id (view #name <$> exs)
 #+end_src
 
@@ -293,7 +291,7 @@ Int                     14
 *** categories
 **** operators
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 reportTopX 10 (not . FP.isLatinLetter . head) id (view #name <$> exs)
 #+end_src
 
@@ -317,7 +315,7 @@ $fEqChar                 6
 
 **** local vars
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 :set -Wno-x-partial
 reportTopX 10 (\x -> ((CVars==) . fst) x && (Char.isLower . head . snd) x) printName allNames
 #+end_src
@@ -338,7 +336,7 @@ CVars from              10
 
 **** lowers
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 :set -Wno-x-partial
 reportTopX 10 (\x -> ((CExt==) . fst) x && (Char.isLower . head . snd) x) printName allNames
 #+end_src
@@ -359,7 +357,7 @@ CExt  show               7
 
 **** uppers
 
-#+begin_src haskell-ng :results output
+#+begin_src haskell-ng :results output :exports both
 reportTopX 10 (Char.isUpper . head . snd) printName allNames
 #+end_src
 
