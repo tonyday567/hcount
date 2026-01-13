@@ -1,3 +1,4 @@
+{-# LANGUAGE MultilineStrings #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -12,7 +13,6 @@ import Data.Char qualified as Char
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Ord
-import Data.String.Interpolate
 import FlatParse.Basic qualified as FP
 import GHC.Data.FastString
 import GHC.Iface.Ext.Binary
@@ -257,10 +257,10 @@ readHieFiles hieDir = do
 
 cpl :: String
 cpl =
-  [i|program-options
+  """program-options
   ghc-options:
     -fwrite-ide-info
-    -hiedir=.hie|]
+    -hiedir=.hie"""
 
 hasCabalFile :: FilePath -> IO Bool
 hasCabalFile d = d & listDirectory & fmap (filter ((== ".cabal") . takeExtension) >>> null >>> not)

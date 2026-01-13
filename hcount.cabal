@@ -41,7 +41,6 @@ executable hcount
     flatparse >= 0.5.0 && < 0.6,
     process >= 1.6.18 && < 1.7,
     optics-core >= 0.4.1 && < 0.5,
-    string-interpolate >= 0.2.0 && < 0.4,
     base >= 4.7 && < 5,
     containers >= 0.6 && < 0.8,
     ghc >= 8.10 && < 9.10,
