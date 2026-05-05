@@ -19,8 +19,8 @@ import GHC.Iface.Ext.Binary
 import GHC.Iface.Ext.Types
 import GHC.Types.Name
 import GHC.Types.Name.Cache
-import GHC.Unit.Module.Name
 import GHC.Unit.Types
+import Language.Haskell.Syntax.Module.Name
 import NumHask.Prelude
 import Optics.Core
 import Options.Applicative as OA
@@ -28,8 +28,6 @@ import System.Directory
 import System.Directory.Recursive
 import System.FilePath
 import System.Process
-
--- import Language.Haskell.Syntax.Module.Name
 
 data Options = Options
   { arg :: ArgType,
@@ -200,9 +198,6 @@ deconstructLocalName =
          |]
    )
 
-package' :: FP.Parser () String
-package' = reverse . (\x -> bool id (drop 1) (head x == '-') x) . reverse <$> FP.some (FP.satisfy (not . FP.isDigit))
-
 -- | The main data of interest in a 'Name'
 data NameX = NameX {name :: String, module' :: String, package :: String} deriving (Generic, Eq, Show, Ord)
 
@@ -228,12 +223,6 @@ rp p s = case FP.runParserUtf8 p s of
   FP.OK r "" -> r
   _ -> error "parser error"
 
--- | run an FP.Parser; leftovers are thrown away
-rp' :: FP.Parser () a -> String -> a
-rp' p s = case FP.runParserUtf8 p s of
-  FP.OK r _ -> r
-  _ -> error "parser error"
-
 padl :: Int -> String -> String
 padl n t = replicate (n - length t) ' ' <> t
 
@@ -246,7 +235,7 @@ formatCount n (s, x) = padr n s <> padl 6 (show x)
 -- | get contents of all @.hie@ files recursively in the given directory
 readHieFiles :: FilePath -> IO [HieFile]
 readHieFiles hieDir = do
-  nameCache <- initNameCache 'h' []
+  nameCache <- newNameCache
   hieContent <- getDirRecursive hieDir
   let isHieFile f = (&&) (takeExtension f == ".hie") <$> doesFileExist f
   hiePaths <- filterM isHieFile hieContent
