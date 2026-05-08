@@ -1,19 +1,26 @@
 {-# LANGUAGE MultilineStrings #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-x-partial #-}
 
+import Control.Applicative
+import Control.Category ((>>>))
 import Control.Monad
 import Data.Bifunctor
+import Data.Bool
+import Data.ByteString (ByteString)
+import Data.Text qualified as T
+import Data.Text (Text)
+import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
+import Data.Text.Encoding.Error (lenientDecode)
 import Data.ByteString qualified as BS
+import Data.ByteString.Char8 qualified as B
 import Data.Char qualified as Char
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Ord
-import FlatParse.Basic qualified as FP
+import Circuit.Parser qualified as P
+import GHC.Generics
 import GHC.Data.FastString
 import GHC.Iface.Ext.Binary
 import GHC.Iface.Ext.Types
@@ -21,7 +28,6 @@ import GHC.Types.Name
 import GHC.Types.Name.Cache
 import GHC.Unit.Types
 import Language.Haskell.Syntax.Module.Name
-import NumHask.Prelude
 import Optics.Core
 import Options.Applicative as OA
 import System.Directory
@@ -119,7 +125,7 @@ report o = do
   putStrLn $ "Number of files: " <> show (length $ mconcat fs)
   case view #run o of
     RunAll -> reportTopX n (const True) printName ns
-    RunOperators -> reportTopX n (not . FP.isLatinLetter . head . snd) printName ns
+    RunOperators -> reportTopX n (not . Char.isLetter . head . snd) printName ns
     RunLower -> reportTopX n (\x -> ((CExt ==) . fst) x && (Char.isLower . head . snd) x) printName ns
     RunUpper -> reportTopX n (Char.isUpper . head . snd) printName ns
     RunLocal -> reportTopX n (\x -> ((CVars ==) . fst) x && (Char.isLower . head . snd) x) printName ns
@@ -165,7 +171,7 @@ getSimplifiedNames ids = allNames
     lxs = view #name <$> filter (\x -> module' x == "") xs
     exs = filter (\x -> module' x /= "") xs
     allNames =
-      (second FP.utf8ToStr . rp deconstructLocalName <$> lxs)
+      (second B.unpack . rp deconstructLocalName <$> lxs)
         <> ((CExt,) . view #name <$> exs)
 
 -- | A simplified categorization of name types
@@ -182,21 +188,25 @@ data NameCats
     CExt
   deriving (Generic, Eq, Ord, Show)
 
-deconstructLocalName :: FP.Parser () (NameCats, BS.ByteString)
+deconstructLocalName :: P.Parser Text Char (NameCats, BS.ByteString)
 deconstructLocalName =
-  $( FP.switch
-       [|
-         case _ of
-           "$_in$$d" -> (CCon,) <$> FP.takeRest
-           "$_in$$c" -> (COps,) <$> FP.takeRest
-           "$_in$$t" -> (COther,) <$> FP.takeRest
-           "$_in$$maxtag_" -> (COther,) <$> FP.takeRest
-           "$_in$$tag2con_" -> (COther,) <$> FP.takeRest
-           "$_in$$" -> (CError,) <$> FP.takeRest
-           "$_in$" -> (CVars,) <$> FP.takeRest
-           _ -> (CError,) <$> FP.takeRest
-         |]
-   )
+  stringBs "$_in$$d" *> ((CCon,) <$> (encodeUtf8 <$> P.takeRest))
+    P.<|> stringBs "$_in$$c" *> ((COps,) <$> (encodeUtf8 <$> P.takeRest))
+    P.<|> stringBs "$_in$$t" *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+    P.<|> stringBs "$_in$$maxtag_" *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+    P.<|> stringBs "$_in$$tag2con_" *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+    P.<|> stringBs "$_in$$" *> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
+    P.<|> stringBs "$_in$" *> ((CVars,) <$> (encodeUtf8 <$> P.takeRest))
+    P.<|> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
+
+stringBs :: BS.ByteString -> P.Parser Text Char ()
+stringBs bs = () <$ P.string (B.unpack bs)
+
+-- | run a Parser; leftovers is an error
+rp :: P.Parser Text Char a -> String -> a
+rp p s = case P.runParser p (decodeUtf8With lenientDecode (B.pack s)) of
+  P.These r rest | T.null rest -> r
+  _ -> error "parser error"
 
 -- | The main data of interest in a 'Name'
 data NameX = NameX {name :: String, module' :: String, package :: String} deriving (Generic, Eq, Show, Ord)
@@ -216,12 +226,6 @@ count = Map.fromListWith (+) . fmap (,1)
 -- | top n occurrences
 top :: (Ord k) => Int -> [k] -> [(k, Int)]
 top t xs = take t $ List.sortOn (Down . snd) . Map.toList $ count xs
-
--- | run an FP.Parser; leftovers is an error
-rp :: FP.Parser () a -> String -> a
-rp p s = case FP.runParserUtf8 p s of
-  FP.OK r "" -> r
-  _ -> error "parser error"
 
 padl :: Int -> String -> String
 padl n t = replicate (n - length t) ' ' <> t

@@ -1,8 +1,4 @@
-packages: hcount.cabal
-allow-newer: *:base
-allow-newer: indexed-traversable:base
-allow-newer: hcount:base
-allow-newer: hcount:ghc
-allow-newer: hcount:containers
-allow-newer: optics-core:containers
-allow-newer: indexed-traversable:containers
+packages:
+  hcount.cabal
+  /Users/tonyday567/haskell/circuits-parser/circuits-parser.cabal
+  /Users/tonyday567/haskell/circuits/circuits.cabal
