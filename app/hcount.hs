@@ -250,10 +250,7 @@ readHieFiles hieDir = do
 
 cpl :: String
 cpl =
-  """program-options
-  ghc-options:
-    -fwrite-ide-info
-    -hiedir=.hie"""
+  "package *\n  ghc-options: -fwrite-ide-info -hiedir=.hie\n"
 
 hasCabalFile :: FilePath -> IO Bool
 hasCabalFile d = d & listDirectory & fmap (filter ((== ".cabal") . takeExtension) >>> null >>> not)
@@ -299,15 +296,15 @@ doRebuild fp = do
     putStrLn ("rebuilding " <> fp)
     withCurrentDirectory
       fp
-      (callCommand "cabal clean && cabal build all")
+      (callCommand "cabal clean && cabal build all --ghc-options=-fwrite-ide-info --ghc-options=-hiedir=.hie")
   pure b
 
 doBuild :: FilePath -> IO Bool
 doBuild fp = do
   b <- hasCabalFile fp
   when b $ do
-    putStrLn ("rebuilding " <> fp)
+    putStrLn ("building " <> fp)
     withCurrentDirectory
       fp
-      (callCommand "cabal build all")
+      (callCommand "cabal build all --ghc-options=-fwrite-ide-info --ghc-options=-hiedir=.hie")
   pure b

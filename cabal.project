@@ -1,4 +1,5 @@
-packages:
-  hcount.cabal
-  /Users/tonyday567/haskell/circuits-parser/circuits-parser.cabal
-  /Users/tonyday567/haskell/circuits/circuits.cabal
+packages: .
+  ../circuits
+  ../circuits-parser
+
+allow-newer: all
