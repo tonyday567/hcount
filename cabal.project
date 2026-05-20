@@ -1,5 +1,6 @@
-packages: .
-  ../circuits
-  ../circuits-parser
+packages:
+  hcount.cabal
+  ../circuits/circuits.cabal
+  ../circuits-parser/circuits-parser.cabal
 
-allow-newer: all
+write-ghc-environment-files: always
