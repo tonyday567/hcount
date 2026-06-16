@@ -3,25 +3,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-x-partial #-}
 
+import Circuit.Parser qualified as P
 import Control.Applicative
 import Control.Category ((>>>))
 import Control.Monad
 import Data.Bifunctor
 import Data.Bool
 import Data.ByteString (ByteString)
-import Data.Text qualified as T
-import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
-import Data.Text.Encoding.Error (lenientDecode)
 import Data.ByteString qualified as BS
 import Data.ByteString.Char8 qualified as B
 import Data.Char qualified as Char
 import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Ord
-import Circuit.Parser qualified as P
-import GHC.Generics
+import Data.Text (Text)
+import Data.Text qualified as T
+import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
+import Data.Text.Encoding.Error (lenientDecode)
 import GHC.Data.FastString
+import GHC.Generics
 import GHC.Iface.Ext.Binary
 import GHC.Iface.Ext.Types
 import GHC.Types.Name
@@ -190,14 +190,21 @@ data NameCats
 
 deconstructLocalName :: P.Parser Text Char (NameCats, BS.ByteString)
 deconstructLocalName =
-  stringBs "$_in$$d" *> ((CCon,) <$> (encodeUtf8 <$> P.takeRest))
-    P.<|> stringBs "$_in$$c" *> ((COps,) <$> (encodeUtf8 <$> P.takeRest))
-    P.<|> stringBs "$_in$$t" *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
-    P.<|> stringBs "$_in$$maxtag_" *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
-    P.<|> stringBs "$_in$$tag2con_" *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
-    P.<|> stringBs "$_in$$" *> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
-    P.<|> stringBs "$_in$" *> ((CVars,) <$> (encodeUtf8 <$> P.takeRest))
-    P.<|> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
+  stringBs "$_in$$d"
+    *> ((CCon,) <$> (encodeUtf8 <$> P.takeRest))
+      P.<|> stringBs "$_in$$c"
+    *> ((COps,) <$> (encodeUtf8 <$> P.takeRest))
+      P.<|> stringBs "$_in$$t"
+    *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+      P.<|> stringBs "$_in$$maxtag_"
+    *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+      P.<|> stringBs "$_in$$tag2con_"
+    *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+      P.<|> stringBs "$_in$$"
+    *> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
+      P.<|> stringBs "$_in$"
+    *> ((CVars,) <$> (encodeUtf8 <$> P.takeRest))
+      P.<|> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
 
 stringBs :: BS.ByteString -> P.Parser Text Char ()
 stringBs bs = () <$ P.string (B.unpack bs)
