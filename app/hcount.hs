@@ -191,23 +191,23 @@ data NameCats
 deconstructLocalName :: P.Parser Text Char (NameCats, BS.ByteString)
 deconstructLocalName =
   stringBs "$_in$$d"
-    *> ((CCon,) <$> (encodeUtf8 <$> P.takeRest))
+    *> ((CCon,) . encodeUtf8 <$> P.takeRest)
       P.<|> stringBs "$_in$$c"
-    *> ((COps,) <$> (encodeUtf8 <$> P.takeRest))
+    *> ((COps,) . encodeUtf8 <$> P.takeRest)
       P.<|> stringBs "$_in$$t"
-    *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+    *> ((COther,) . encodeUtf8 <$> P.takeRest)
       P.<|> stringBs "$_in$$maxtag_"
-    *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+    *> ((COther,) . encodeUtf8 <$> P.takeRest)
       P.<|> stringBs "$_in$$tag2con_"
-    *> ((COther,) <$> (encodeUtf8 <$> P.takeRest))
+    *> ((COther,) . encodeUtf8 <$> P.takeRest)
       P.<|> stringBs "$_in$$"
-    *> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
+    *> ((CError,) . encodeUtf8 <$> P.takeRest)
       P.<|> stringBs "$_in$"
-    *> ((CVars,) <$> (encodeUtf8 <$> P.takeRest))
-      P.<|> ((CError,) <$> (encodeUtf8 <$> P.takeRest))
+    *> ((CVars,) . encodeUtf8 <$> P.takeRest)
+      P.<|> ((CError,) . encodeUtf8 <$> P.takeRest)
 
 stringBs :: BS.ByteString -> P.Parser Text Char ()
-stringBs bs = () <$ P.string (B.unpack bs)
+stringBs bs = void (P.string (B.unpack bs))
 
 -- | run a Parser; leftovers is an error
 rp :: P.Parser Text Char a -> String -> a
